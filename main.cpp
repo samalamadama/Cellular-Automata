@@ -5,6 +5,7 @@
 #include "texture.hpp"
 #include "bit_matrix.hpp"
 #include <iostream>
+#include "boost/dynamic_bitset.hpp"
 #include <cmath>
 
 int main()
@@ -17,7 +18,8 @@ int main()
     sf::Vector2i fieldDimentions{0, 0};
     sf::Vector2i tileDimentions{0, 0};
     int n_cells{0};
-    std::bitset<8> rule;
+    boost::dynamic_bitset<> rule {00000000};
+    std::string rule_in_strings;
 
     std::cout<<"Insert rule"<<'\n';
     std::cin>>rule;
@@ -25,6 +27,7 @@ int main()
     {
       throw std::runtime_error("rule not acceptable");
     }
+    to_string(rule, rule_in_strings);
 
     std::cout << "Inserire numero di cellule" << '\n';
     std::cin >> fieldDimentions.x;
@@ -53,11 +56,13 @@ int main()
 
     sf::RenderWindow window(sf::VideoMode(tileDimentions.x * fieldDimentions.x,
                                           tileDimentions.y * fieldDimentions.y),
-                            "cellular automata, rule " + rule.to_string(),
+                            "cellular automata, rule " + rule_in_strings,
                             sf::Style::Titlebar | sf::Style::Close);
     window.setPosition(sf::Vector2i(100, 30));
 
     Field field{fieldDimentions.x, n_cells, rule};
+    Field field_damaged{field};
+    field_damaged.flip(std::floor(fieldDimentions.x/2));
     TileMap tiles;
 
     // chances of improval here, could make the clock independent of the fps part
@@ -98,9 +103,9 @@ int main()
       elapsed = clock.getElapsedTime();
       if (game_is_on && elapsed > sf::milliseconds(1000 / iteration_per_second))
       {
-        if(!field.evolve()){
-          throw std::runtime_error("error in field evolution");
-        }
+        field.evolve();
+        field_damaged.evolve();
+        if(iteration<fieldDimentions.y)
         log_book.set_row(iteration%log_book.get_height()+1, field.get_field());
         ++iteration;
         clock.restart();

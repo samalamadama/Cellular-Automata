@@ -1,20 +1,24 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System/Time.hpp>
 #include "field.hpp"
-#include "bit_matrix.hpp"
 #include <iostream>
+#include "lyapunov_spectrum.hpp"
+#include "boost/dynamic_bitset.hpp"
+#include <cmath>
 
 int main(){
-    Field field(100, 50, std::bitset<8>("01101110"));
-    std::cout<<"n iterasions"<<'\n';
-    int n_iterations;
-    std::cin>>n_iterations;
-    Bit_Matrix matrix(n_iterations, 100);
-    for(int i=0; i!= matrix.get_height(); ++i){
-        matrix.set_row(i+1, field.get_field());
+    boost::dynamic_bitset<> rule(8, 150);
+    Field field(20, 0, rule);
+    auto jacob = jacobian(field);
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(jacob.cast<double>());
+
+    for (int i=0; i!=5; ++i){
         field.evolve();
-    }
-    for(int i=0; i!= matrix.get_height(); ++i){
-        std::cout<<matrix.get_row(i+1)<<'\n';
-    }
+        jacob = jacobian(field)*jacob;
+            }
+
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver2(jacob.cast<double>());
+    for(int i=0; i!= jacob.diagonalSize(); ++i){
+        std::cout<<std::log(eigensolver2.eigenvalues()(i))/6<<"   "<<std::log(eigensolver.eigenvalues()(i))<<'\n';
+        } 
 }

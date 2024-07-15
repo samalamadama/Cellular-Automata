@@ -24,13 +24,20 @@ private:
 class Field
 {
 public:
-  Field(int length, std::bitset<8> rule) : field_(length), rule_{rule} {}
+  Field(int length, boost::dynamic_bitset<> rule) : field_(length), rule_{rule} {}
 
-  Field(int length, int n_alive, std::bitset<8> rule) : Field(length, rule)
+
+  Field(int length, int n_alive, boost::dynamic_bitset<> rule) : Field(length, rule)
   {
-    if (n_alive < 0 || n_alive > length)
+    if (n_alive < -1 || n_alive > length)
       throw std::out_of_range("number of alive cell selected invalid");
     RandomIntGenerator random_position_{0, length-1};
+    RandomIntGenerator random_status_{0, 1};
+    if(n_alive==-1){
+      for(int i=0; i!=length; ++i){
+        field_[i] = random_status_.get();
+      }
+    }else{
     while (n_alive != 0)
     {
       int position = random_position_.get();
@@ -40,20 +47,37 @@ public:
         field_[position]=1;
       }
     }
+    }
   }
 
-  bool evolve();
+  Field(Field const& field_to_copy) : field_{field_to_copy.get_field()}, rule_{field_to_copy.get_rule()}{}
+
+  void evolve();
+
+  int get_neighborhood_type(int position) const;
 
   boost::dynamic_bitset<> const &get_field() const { return field_; }
 
   void set_alive(int position)
-  {
+  { 
     field_[position]=1;
+  }
+
+  void set_dead(int position){
+    field_[position]=0;
+  }
+
+  void flip(int position){
+    field_[position] = !field_[position];
+  }
+
+  boost::dynamic_bitset<> const &get_rule() const {
+    return rule_;
   }
 
 private:
   boost::dynamic_bitset<> field_;
-  const std::bitset<8> rule_;
+  const boost::dynamic_bitset<> rule_;
 };
 
 #endif
